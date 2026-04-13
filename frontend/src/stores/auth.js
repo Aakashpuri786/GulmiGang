@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import api from '../api'
+import axios from 'axios'
+import apiConfig from '../config/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -7,50 +8,67 @@ export const useAuthStore = defineStore('auth', {
     token: localStorage.getItem('token') || null,
     isAuthenticated: !!localStorage.getItem('token')
   }),
+  
+  getters: {
+    currentUser: (state) => state.user,
+    isLoggedIn: (state) => state.isAuthenticated
+  },
+  
   actions: {
     async register(userData) {
-      console.log('Registration attempt with:', userData); // Debug log
       try {
-        const res = await api.post('/auth/register', userData)
-        console.log('Registration response:', res.data); // Debug log
+        const res = await axios.post(apiConfig.endpoints.auth.register, userData)
         this.token = res.data.token
-        localStorage.setItem('token', this.token)
+        this.user = res.data.user
         this.isAuthenticated = true
-        await this.getUser()
+        localStorage.setItem('token', this.token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
         return res.data
-      } catch (err) {
-        console.error('Registration error:', err.response?.data || err.message); // Debug log
-        throw err
+      } catch (error) {
+        console.error('Registration error:', error.response?.data || error.message)
+        throw error.response?.data || error
       }
     },
+    
     async login(credentials) {
-      console.log('Login attempt with:', credentials); // Debug log
       try {
-        const res = await api.post('/auth/login', credentials)
-        console.log('Login response:', res.data); // Debug log
+        const res = await axios.post(apiConfig.endpoints.auth.login, credentials)
         this.token = res.data.token
-        localStorage.setItem('token', this.token)
+        this.user = res.data.user
         this.isAuthenticated = true
-        await this.getUser()
+        localStorage.setItem('token', this.token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
         return res.data
-      } catch (err) {
-        console.error('Login error:', err.response?.data || err.message); // Debug log
-        throw err
+      } catch (error) {
+        console.error('Login error:', error.response?.data || error.message)
+        throw error.response?.data || error
       }
     },
+    
     async getUser() {
       try {
-        const res = await api.get('/auth/user')
+        const res = await axios.get(apiConfig.endpoints.auth.user)
         this.user = res.data
-      } catch (err) {
+        return res.data
+      } catch (error) {
+        console.error('Get user error:', error)
         this.logout()
       }
     },
+    
     logout() {
       this.user = null
       this.token = null
       this.isAuthenticated = false
       localStorage.removeItem('token')
+      delete axios.defaults.headers.common['Authorization']
+    },
+    
+    initAuth() {
+      if (this.token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        axios.defaults.baseURL = apiConfig.API_URL
+      }
     }
   }
 })
