@@ -7,6 +7,19 @@ require('dotenv').config();
 
 const app = express();
 const httpServer = http.createServer(app);
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:5178',
+  'http://127.0.0.1:5178',
+  ...configuredOrigins
+]);
 
 // Middleware Configuration
 app.use(helmet({
@@ -14,7 +27,13 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5178",
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   credentials: true
 }));
 

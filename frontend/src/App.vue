@@ -1,9 +1,12 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from './stores/auth'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 const authStore = useAuthStore()
+onMounted(() => {
+  authStore.initAuth()
+})
 
 const isAuthenticated = computed(() => !!authStore.token)
 

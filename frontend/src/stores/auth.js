@@ -2,6 +2,14 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import apiConfig from '../config/api'
 
+const setAuthHeader = (token) => {
+  if (token) {
+    axios.defaults.headers.common['x-auth-token'] = token
+  } else {
+    delete axios.defaults.headers.common['x-auth-token']
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
@@ -19,14 +27,14 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await axios.post(apiConfig.endpoints.auth.register, userData)
         this.token = res.data.token
-        this.user = res.data.user
         this.isAuthenticated = true
         localStorage.setItem('token', this.token)
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        setAuthHeader(this.token)
+        await this.getUser()
         return res.data
       } catch (error) {
         console.error('Registration error:', error.response?.data || error.message)
-        throw error.response?.data || error
+        throw error
       }
     },
     
@@ -34,14 +42,14 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await axios.post(apiConfig.endpoints.auth.login, credentials)
         this.token = res.data.token
-        this.user = res.data.user
         this.isAuthenticated = true
         localStorage.setItem('token', this.token)
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+        setAuthHeader(this.token)
+        await this.getUser()
         return res.data
       } catch (error) {
         console.error('Login error:', error.response?.data || error.message)
-        throw error.response?.data || error
+        throw error
       }
     },
     
@@ -53,6 +61,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Get user error:', error)
         this.logout()
+        throw error
       }
     },
     
@@ -61,14 +70,22 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       this.isAuthenticated = false
       localStorage.removeItem('token')
-      delete axios.defaults.headers.common['Authorization']
+      setAuthHeader(null)
     },
     
-    initAuth() {
+    async initAuth() {
+      axios.defaults.baseURL = apiConfig.API_URL
+
       if (this.token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-        axios.defaults.baseURL = apiConfig.API_URL
+        setAuthHeader(this.token)
+        try {
+          await this.getUser()
+        } catch {
+          return false
+        }
       }
+
+      return !!this.token
     }
   }
 })
