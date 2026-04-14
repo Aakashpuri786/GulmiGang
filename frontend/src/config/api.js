@@ -26,6 +26,10 @@ export default {
       like: (postId) => `${API_URL}/posts/${postId}/like`,
       comment: (postId) => `${API_URL}/posts/${postId}/comment`
     },
+    stories: {
+      list: `${API_URL}/stories`,
+      create: `${API_URL}/stories`
+    },
     messages: {
       conversations: `${API_URL}/messages/conversations`,
       send: `${API_URL}/messages`,

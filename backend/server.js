@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const http = require('http');
+const { initSocket } = require('./socket');
 require('dotenv').config();
 
 const app = express();
@@ -20,6 +21,7 @@ const allowedOrigins = new Set([
   'http://127.0.0.1:5178',
   ...configuredOrigins
 ]);
+initSocket(httpServer, allowedOrigins);
 
 // Middleware Configuration
 app.use(helmet({
@@ -104,13 +106,15 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       auth: '/api/auth',
-      posts: '/api/posts'
+      posts: '/api/posts',
+      stories: '/api/stories'
     }
   });
 });
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
+app.use('/api/stories', require('./routes/stories'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

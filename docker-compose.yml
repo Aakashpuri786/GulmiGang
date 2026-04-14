@@ -58,7 +58,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: gulmigang2-frontend
     restart: unless-stopped
     ports:
@@ -68,6 +68,9 @@ services:
       VITE_WS_URL: http://localhost:5007
       VITE_APP_NAME: GulmiGang
       VITE_APP_VERSION: 1.0.0
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "300"
+      WATCHPACK_POLLING: "true"
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
@@ -75,7 +78,7 @@ services:
       - gulmigang-network
     depends_on:
       - backend
-    command: npm run dev -- --host 0.0.0.0
+    command: npm run dev:docker
 
 networks:
   gulmigang-network:
