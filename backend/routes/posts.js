@@ -2,42 +2,64 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const Post = require('../models/Post');
-const User = require('../models/User');
+const { imageUpload, buildUploadedFileUrl } = require('../middleware/uploads');
 
 const router = express.Router();
 
 // @route   POST /api/posts
 // @desc    Create a new post
 // @access  Private
-router.post('/', auth, [
-  body('content', 'Content is required').optional().isLength({ max: 500 }),
-  body('location').optional().isString()
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+router.post(
+  '/',
+  auth,
+  imageUpload.array('images', 6),
+  [
+    body('content').optional({ values: 'falsy' }).isLength({ max: 500 }),
+    body('location').optional().isString()
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+      const uploadedImages = (req.files || []).map((file) => buildUploadedFileUrl(req, file));
+      const bodyImages = Array.isArray(req.body.images)
+        ? req.body.images
+        : req.body.images
+          ? [req.body.images]
+          : [];
+
+      if (!content && uploadedImages.length === 0 && bodyImages.length === 0) {
+        return res.status(400).json({ msg: 'Post content or at least one image is required' });
+      }
+
+      const hashtags = Array.isArray(req.body.hashtags)
+        ? req.body.hashtags
+        : typeof req.body.hashtags === 'string' && req.body.hashtags.trim()
+          ? req.body.hashtags.split(',').map((tag) => tag.trim()).filter(Boolean)
+          : [];
+
+      const newPost = new Post({
+        author: req.user.id,
+        content,
+        images: [...bodyImages, ...uploadedImages],
+        location: req.body.location,
+        hashtags
+      });
+
+      const post = await newPost.save();
+      await post.populate('author', 'username fullName profilePicture');
+
+      res.json(post);
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).send('Server error');
+    }
   }
-
-  try {
-    const { content, images, location, hashtags } = req.body;
-
-    const newPost = new Post({
-      author: req.user.id,
-      content,
-      images: images || [],
-      location,
-      hashtags: hashtags || []
-    });
-
-    const post = await newPost.save();
-    await post.populate('author', 'username fullName profilePicture');
-
-    res.json(post);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
-  }
-});
+);
 
 // @route   GET /api/posts
 // @desc    Get all posts (feed)
@@ -49,6 +71,24 @@ router.get('/', auth, async (req, res) => {
       .populate('comments.user', 'username fullName')
       .sort({ createdAt: -1 })
       .limit(20);
+
+    res.json(posts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   GET /api/posts/user/:userId
+// @desc    Get posts by user
+// @access  Private
+router.get('/user/:userId', auth, async (req, res) => {
+  try {
+    const posts = await Post.find({ author: req.params.userId })
+      .populate('author', 'username fullName profilePicture location')
+      .populate('comments.user', 'username fullName')
+      .sort({ createdAt: -1 })
+      .limit(50);
 
     res.json(posts);
   } catch (err) {

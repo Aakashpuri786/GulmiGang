@@ -10,7 +10,8 @@ export default {
       login: `${API_URL}/auth/login`,
       logout: `${API_URL}/auth/logout`,
       refresh: `${API_URL}/auth/refresh`,
-      user: `${API_URL}/auth/user`
+      user: `${API_URL}/auth/user`,
+      updateUser: `${API_URL}/auth/user`
     },
     users: {
       profile: (username) => `${API_URL}/users/${username}`,
@@ -34,6 +35,9 @@ export default {
       conversations: `${API_URL}/messages/conversations`,
       send: `${API_URL}/messages`,
       get: (userId) => `${API_URL}/messages/${userId}`
+    },
+    search: {
+      query: `${API_URL}/search`
     }
   }
 };

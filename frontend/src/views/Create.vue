@@ -8,14 +8,14 @@
 
       <div class="create-tabs">
         <button
-          @click="activeTab = 'post'"
+          @click="setActiveTab('post')"
           :class="{ active: activeTab === 'post' }"
           class="tab-btn"
         >
           📝 Post
         </button>
         <button
-          @click="activeTab = 'reel'"
+          @click="setActiveTab('reel')"
           :class="{ active: activeTab === 'reel' }"
           class="tab-btn"
         >
@@ -30,7 +30,7 @@
             <h3>Create a Post</h3>
           </div>
 
-          <Form @submit.prevent="handleCreatePost" class="post-form">
+          <Form ref="postFormRef" @submit.prevent="handleCreatePost" class="post-form">
             <div class="form-group">
               <label class="form-label">What's on your mind?</label>
               <Field name="content" rules="required|max:500" v-slot="{ field, errorMessage }">
@@ -98,7 +98,7 @@
             <h3>Create a Reel</h3>
           </div>
 
-          <Form @submit.prevent="handleCreateReel" class="reel-form">
+          <Form ref="reelFormRef" @submit.prevent="handleCreateReel" class="reel-form">
             <div class="form-group">
               <label class="form-label">Video</label>
               <div class="video-upload">
@@ -159,7 +159,7 @@
 import { Form, Field } from 'vee-validate'
 import { usePostStore } from '../stores/post'
 import { useReelStore } from '../stores/reel'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 export default {
   components: { Form, Field },
@@ -167,7 +167,8 @@ export default {
     const postStore = usePostStore()
     const reelStore = useReelStore()
     const router = useRouter()
-    return { postStore, reelStore, router }
+    const route = useRoute()
+    return { postStore, reelStore, router, route }
   },
   data() {
     return {
@@ -178,7 +179,27 @@ export default {
       selectedVideo: null
     }
   },
+  mounted() {
+    this.syncTabFromRoute()
+  },
+  watch: {
+    'route.query.tab'() {
+      this.syncTabFromRoute()
+    }
+  },
   methods: {
+    syncTabFromRoute() {
+      const nextTab = this.route.query.tab === 'reel' ? 'reel' : 'post'
+      if (this.activeTab !== nextTab) {
+        this.activeTab = nextTab
+      }
+    },
+
+    setActiveTab(tab) {
+      this.activeTab = tab
+      this.router.replace({ path: '/create', query: { tab } }).catch(() => {})
+    },
+
     async handleCreatePost(values) {
       this.postLoading = true
       try {
@@ -191,7 +212,8 @@ export default {
 
         await this.postStore.createPost(formData)
         this.clearForm()
-        this.router.push('/feed')
+        this.$refs.postFormRef?.resetForm()
+        this.router.push({ path: '/feed', query: { created: 'post' } })
       } catch (err) {
         alert('Failed to create post: ' + (err.response?.data?.msg || err.message))
       } finally {
@@ -213,7 +235,8 @@ export default {
 
         await this.reelStore.createReel(formData)
         this.clearForm()
-        this.router.push('/reels')
+        this.$refs.reelFormRef?.resetForm()
+        this.router.push({ path: '/reels', query: { created: 'reel' } })
       } catch (err) {
         alert('Failed to create reel: ' + (err.response?.data?.msg || err.message))
       } finally {

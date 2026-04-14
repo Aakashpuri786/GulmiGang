@@ -3,12 +3,14 @@ import { RouterView } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { computed, onMounted, watch } from 'vue'
 import { useStoryStore } from './stores/story'
+import { useChatStore } from './stores/chat'
 import PublicHeader from './components/PublicHeader.vue'
 import AppHeader from './components/AppHeader.vue'
 import AppBottomNav from './components/AppBottomNav.vue'
 
 const authStore = useAuthStore()
 const storyStore = useStoryStore()
+const chatStore = useChatStore()
 
 onMounted(() => {
   authStore.initAuth()
@@ -19,14 +21,12 @@ const isAuthenticated = computed(() => !!authStore.token)
 watch(() => authStore.token, (token) => {
   if (token) {
     storyStore.initRealtime(token)
+    chatStore.initRealtime(token)
   } else {
     storyStore.disconnectSocket()
+    chatStore.disconnectSocket()
   }
 }, { immediate: true })
-
-const logout = () => {
-  authStore.logout()
-}
 </script>
 
 <template>
@@ -38,7 +38,7 @@ const logout = () => {
       <RouterView />
     </main>
 
-    <AppBottomNav v-if="isAuthenticated" @logout="logout" />
+    <AppBottomNav v-if="isAuthenticated" />
 
     <footer v-if="!isAuthenticated" class="site-footer">
       <p>© 2026 GulmiGang. Built for the Gulmi community.</p>

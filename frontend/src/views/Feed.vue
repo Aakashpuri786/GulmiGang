@@ -44,33 +44,19 @@
       </div>
     </section>
 
-    <div class="create-post">
-      <div class="card">
-        <div class="card-header">
-          <h4>Share something with the community</h4>
-        </div>
-        <Form @submit="handleCreatePost" class="post-form">
-          <div class="form-group">
-            <Field name="content" rules="required|max:500" v-slot="{ field, errorMessage }">
-              <textarea
-                v-bind="field"
-                class="form-textarea"
-                placeholder="What's on your mind?"
-                rows="3"
-                :class="{ error: errorMessage }"
-              ></textarea>
-              <span v-if="errorMessage" class="error-message">{{ errorMessage }}</span>
-            </Field>
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" :disabled="postLoading">
-              <span v-if="postLoading" class="loading-spinner"></span>
-              {{ postLoading ? 'Posting...' : 'Post' }}
-            </button>
-          </div>
-        </Form>
+    <section v-if="$route.query.created === 'post'" class="feed-banner success">
+      <div>
+        <strong>Your post was shared.</strong>
+        <span>It is now live in the community feed.</span>
       </div>
-    </div>
+    </section>
+
+    <section class="feed-banner">
+      <div>
+        <h4>Want to share something new?</h4>
+        <p>Posts and reels can now be shared only from the Create section.</p>
+      </div>
+    </section>
 
     <div class="posts-section">
       <h3 class="section-title">Recent Posts</h3>
@@ -97,6 +83,15 @@
 
           <div class="post-content">
             <p>{{ post.content }}</p>
+          </div>
+
+          <div v-if="post.images?.length" class="post-gallery" :class="{ single: post.images.length === 1 }">
+            <img
+              v-for="(image, index) in post.images"
+              :key="`${post._id}-image-${index}`"
+              :src="image"
+              :alt="`Post image ${index + 1}`"
+            />
           </div>
 
           <div class="post-actions">
@@ -244,7 +239,6 @@ export default {
   },
   data() {
     return {
-      postLoading: false,
       commentLoading: false,
       storySubmitting: false,
       isStoryComposerOpen: false,
@@ -284,18 +278,6 @@ export default {
     ])
   },
   methods: {
-    async handleCreatePost(values) {
-      this.postLoading = true
-      try {
-        await this.postStore.createPost(values)
-        values.content = ''
-      } catch (err) {
-        alert('Failed to create post: ' + (err.response?.data?.msg || err.message))
-      } finally {
-        this.postLoading = false
-      }
-    },
-
     async toggleLike(post) {
       try {
         await this.postStore.likePost(post._id)
@@ -578,32 +560,11 @@ export default {
   line-height: 1.3;
 }
 
-.create-post {
-  margin-bottom: 40px;
-}
-
-.post-form {
-  padding: 20px;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 16px;
-  resize: vertical;
-  transition: border-color 0.3s ease;
-}
-
-.form-textarea:focus,
 .story-textarea:focus {
   outline: none;
   border-color: #667eea;
 }
 
-.form-textarea.error,
 .comment-input.error {
   border-color: #dc3545;
 }
@@ -615,14 +576,51 @@ export default {
   display: block;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 15px;
+.post-gallery img {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.post-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .posts-section {
   margin-top: 40px;
+}
+
+.feed-banner {
+  margin-bottom: 28px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: white;
+  border: 1px solid #e6ecf5;
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(32, 48, 84, 0.08);
+}
+
+.feed-banner.success {
+  background: linear-gradient(135deg, #eefbf3, #f9fffb);
+  border-color: #caead5;
+}
+
+.feed-banner h4,
+.feed-banner strong {
+  margin: 0;
+  color: #22314d;
+}
+
+.feed-banner p,
+.feed-banner span {
+  display: block;
+  margin: 6px 0 0;
+  color: #67758f;
 }
 
 .empty-state {
@@ -710,6 +708,25 @@ export default {
   font-size: 16px;
   line-height: 1.6;
   color: #495057;
+}
+
+.post-content p {
+  margin: 0;
+}
+
+.post-gallery {
+  padding: 0 20px 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.post-gallery.single {
+  grid-template-columns: 1fr;
+}
+
+.post-gallery img {
+  aspect-ratio: 1 / 1;
 }
 
 .post-actions {
@@ -947,6 +964,11 @@ export default {
     padding: 10px;
   }
 
+  .feed-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .stories-heading {
     flex-direction: column;
     align-items: flex-start;
@@ -968,6 +990,10 @@ export default {
 
   .post-actions {
     flex-wrap: wrap;
+  }
+
+  .post-gallery {
+    grid-template-columns: 1fr;
   }
 
   .comment-form {
