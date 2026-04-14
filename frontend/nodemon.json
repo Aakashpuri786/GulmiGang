@@ -1,0 +1,15 @@
+{
+  "watch": [
+    "src",
+    "public",
+    "index.html",
+    "vite.config.js"
+  ],
+  "ext": "vue,js,css,scss,sass,html,json",
+  "ignore": [
+    "dist",
+    "node_modules"
+  ],
+  "exec": "vite --host 0.0.0.0 --port 5178 --strictPort",
+  "delay": "150"
+}
