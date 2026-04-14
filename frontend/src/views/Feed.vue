@@ -49,7 +49,7 @@
         <div class="card-header">
           <h4>Share something with the community</h4>
         </div>
-        <Form @submit="handleCreatePost" class="post-form">
+        <Form :key="postFormKey" @submit="handleCreatePost" class="post-form">
           <div class="form-group">
             <Field name="content" rules="required|max:500" v-slot="{ field, errorMessage }">
               <textarea
@@ -62,6 +62,35 @@
               <span v-if="errorMessage" class="error-message">{{ errorMessage }}</span>
             </Field>
           </div>
+
+          <div class="composer-upload">
+            <input
+              ref="feedImageInput"
+              type="file"
+              accept="image/*"
+              multiple
+              class="file-input"
+              @change="handlePostImages"
+            />
+
+            <button type="button" class="upload-trigger" @click="openImagePicker">
+              Add Images
+            </button>
+
+            <div v-if="selectedImages.length" class="selected-image-grid">
+              <div
+                v-for="(image, index) in selectedImages"
+                :key="`${image.file.name}-${index}`"
+                class="selected-image-card"
+              >
+                <img :src="image.preview" :alt="image.file.name" />
+                <button type="button" class="remove-image-btn" @click="removeSelectedImage(index)">
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" :disabled="postLoading">
               <span v-if="postLoading" class="loading-spinner"></span>
@@ -97,6 +126,15 @@
 
           <div class="post-content">
             <p>{{ post.content }}</p>
+          </div>
+
+          <div v-if="post.images?.length" class="post-gallery" :class="{ single: post.images.length === 1 }">
+            <img
+              v-for="(image, index) in post.images"
+              :key="`${post._id}-image-${index}`"
+              :src="image"
+              :alt="`Post image ${index + 1}`"
+            />
           </div>
 
           <div class="post-actions">
@@ -246,6 +284,8 @@ export default {
     return {
       postLoading: false,
       commentLoading: false,
+      postFormKey: 0,
+      selectedImages: [],
       storySubmitting: false,
       isStoryComposerOpen: false,
       isStoryViewerOpen: false,
@@ -283,12 +323,21 @@ export default {
       this.storyStore.fetchStories()
     ])
   },
+  beforeUnmount() {
+    this.resetSelectedImages()
+  },
   methods: {
     async handleCreatePost(values) {
       this.postLoading = true
       try {
-        await this.postStore.createPost(values)
-        values.content = ''
+        const formData = new FormData()
+        formData.append('content', values.content)
+        this.selectedImages.forEach((image) => {
+          formData.append('images', image.file)
+        })
+
+        await this.postStore.createPost(formData)
+        this.resetPostComposer()
       } catch (err) {
         alert('Failed to create post: ' + (err.response?.data?.msg || err.message))
       } finally {
@@ -400,6 +449,56 @@ export default {
     storyFallback(userId) {
       const index = this.storyTiles.findIndex((tile) => tile._id === userId)
       return this.storyBackgrounds[index % this.storyBackgrounds.length]
+    },
+
+    openImagePicker() {
+      this.$refs.feedImageInput?.click()
+    },
+
+    handlePostImages(event) {
+      const files = Array.from(event.target.files || [])
+
+      files.forEach((file) => {
+        if (!file.type.startsWith('image/')) {
+          return
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`${file.name} is larger than 5MB.`)
+          return
+        }
+
+        this.selectedImages.push({
+          file,
+          preview: URL.createObjectURL(file)
+        })
+      })
+
+      event.target.value = ''
+    },
+
+    removeSelectedImage(index) {
+      const [removedImage] = this.selectedImages.splice(index, 1)
+      if (removedImage?.preview) {
+        URL.revokeObjectURL(removedImage.preview)
+      }
+    },
+
+    resetSelectedImages() {
+      this.selectedImages.forEach((image) => {
+        if (image.preview) {
+          URL.revokeObjectURL(image.preview)
+        }
+      })
+      this.selectedImages = []
+      if (this.$refs.feedImageInput) {
+        this.$refs.feedImageInput.value = ''
+      }
+    },
+
+    resetPostComposer() {
+      this.postFormKey += 1
+      this.resetSelectedImages()
     },
 
     formatDate(dateString) {
@@ -586,6 +685,10 @@ export default {
   padding: 20px;
 }
 
+.file-input {
+  display: none;
+}
+
 .form-textarea {
   width: 100%;
   padding: 12px;
@@ -619,6 +722,63 @@ export default {
   display: flex;
   justify-content: flex-end;
   margin-top: 15px;
+}
+
+.composer-upload {
+  display: grid;
+  gap: 12px;
+}
+
+.upload-trigger {
+  width: fit-content;
+  border: 1px dashed #b7c4ef;
+  background: #f7f9ff;
+  color: #46557b;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.selected-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+
+.selected-image-card,
+.post-gallery img {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.selected-image-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+}
+
+.selected-image-card img,
+.post-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.remove-image-btn {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: rgba(15, 23, 40, 0.8);
+  color: white;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
 }
 
 .posts-section {
@@ -710,6 +870,25 @@ export default {
   font-size: 16px;
   line-height: 1.6;
   color: #495057;
+}
+
+.post-content p {
+  margin: 0;
+}
+
+.post-gallery {
+  padding: 0 20px 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.post-gallery.single {
+  grid-template-columns: 1fr;
+}
+
+.post-gallery img {
+  aspect-ratio: 1 / 1;
 }
 
 .post-actions {
@@ -968,6 +1147,10 @@ export default {
 
   .post-actions {
     flex-wrap: wrap;
+  }
+
+  .post-gallery {
+    grid-template-columns: 1fr;
   }
 
   .comment-form {

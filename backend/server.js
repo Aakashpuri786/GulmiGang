@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const http = require('http');
+const path = require('path');
 const { initSocket } = require('./socket');
 require('dotenv').config();
 
@@ -41,7 +42,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoint - Critical for Docker health checks
 app.get('/health', (req, res) => {
@@ -107,6 +108,7 @@ app.get('/', (req, res) => {
       health: '/health',
       auth: '/api/auth',
       posts: '/api/posts',
+      reels: '/api/reels',
       stories: '/api/stories'
     }
   });
@@ -114,6 +116,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
+app.use('/api/reels', require('./routes/reels'));
 app.use('/api/stories', require('./routes/stories'));
 
 // Error handling middleware
