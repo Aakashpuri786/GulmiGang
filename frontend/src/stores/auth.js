@@ -64,6 +64,20 @@ export const useAuthStore = defineStore('auth', {
         throw error
       }
     },
+
+    async updateUser(profileData) {
+      try {
+        const config = profileData instanceof FormData
+          ? { headers: { 'Content-Type': 'multipart/form-data' } }
+          : undefined
+        const res = await axios.put(apiConfig.endpoints.auth.updateUser, profileData, config)
+        this.user = res.data
+        return res.data
+      } catch (error) {
+        console.error('Update user error:', error.response?.data || error.message)
+        throw error
+      }
+    },
     
     logout() {
       this.user = null

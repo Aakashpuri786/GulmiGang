@@ -21,6 +21,21 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+router.get('/user/:userId', auth, async (req, res) => {
+  try {
+    const reels = await Reel.find({ author: req.params.userId })
+      .populate('author', 'username fullName profilePicture')
+      .populate('comments.author', 'username fullName profilePicture')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json(reels);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 router.post(
   '/',
   auth,

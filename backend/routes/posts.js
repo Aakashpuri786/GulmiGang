@@ -79,6 +79,24 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// @route   GET /api/posts/user/:userId
+// @desc    Get posts by user
+// @access  Private
+router.get('/user/:userId', auth, async (req, res) => {
+  try {
+    const posts = await Post.find({ author: req.params.userId })
+      .populate('author', 'username fullName profilePicture location')
+      .populate('comments.user', 'username fullName')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json(posts);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 // @route   GET /api/posts/:id
 // @desc    Get post by ID
 // @access  Private
