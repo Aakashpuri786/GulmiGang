@@ -110,6 +110,7 @@ app.get('/', (req, res) => {
       messages: '/api/messages',
       posts: '/api/posts',
       reels: '/api/reels',
+      search: '/api/search',
       stories: '/api/stories'
     }
   });
@@ -119,6 +120,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/reels', require('./routes/reels'));
+app.use('/api/search', require('./routes/search'));
 app.use('/api/stories', require('./routes/stories'));
 
 // Error handling middleware

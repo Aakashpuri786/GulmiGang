@@ -34,6 +34,9 @@ export default {
       conversations: `${API_URL}/messages/conversations`,
       send: `${API_URL}/messages`,
       get: (userId) => `${API_URL}/messages/${userId}`
+    },
+    search: {
+      query: `${API_URL}/search`
     }
   }
 };
