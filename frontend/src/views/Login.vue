@@ -12,7 +12,7 @@
         <span class="message-text">{{ message }}</span>
       </div>
 
-      <Form @submit.prevent="handleSubmit" class="login-form">
+      <Form @submit="handleSubmit" class="login-form">
         <div class="form-group">
           <label for="identifier" class="form-label">Email or Username</label>
           <Field name="identifier" rules="required" v-slot="{ field, errorMessage }">

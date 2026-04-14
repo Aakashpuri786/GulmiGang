@@ -8,7 +8,7 @@
       <span class="message-text">{{ message }}</span>
     </div>
 
-    <Form @submit.prevent="onSubmit" class="register-form">
+    <Form @submit="onSubmit" class="register-form">
       <div class="form-group">
         <Field name="fullName" rules="required" v-slot="{ field, errorMessage }">
           <input v-bind="field" class="form-input" placeholder="Full Name" />

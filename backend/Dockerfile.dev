@@ -1,0 +1,28 @@
+FROM node:20-alpine
+
+WORKDIR /usr/src/app
+
+# Install nodemon globally for development
+RUN npm install -g nodemon
+
+# Install system dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN mkdir -p uploads
+
+EXPOSE 5007
+
+CMD ["npm", "run", "dev"]

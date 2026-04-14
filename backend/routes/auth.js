@@ -79,6 +79,12 @@ router.post('/login', [
 ], async (req, res) => {
   console.log('Login attempt:', req.body); // Debug log
 
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log('Login validation errors:', errors.array()); // Debug log
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const { identifier, password } = req.body;
 
   try {
