@@ -66,6 +66,9 @@ const initSocket = (httpServer, allowedOrigins) => {
     const userId = user._id;
     const existing = onlineUsers.get(userId);
 
+    socket.join(`user:${userId}`);
+    socket.join('chat:group');
+
     onlineUsers.set(userId, {
       user,
       sockets: (existing?.sockets || 0) + 1
@@ -108,7 +111,30 @@ const emitStoryCreated = (story) => {
   }
 };
 
+const emitMessageCreated = (message) => {
+  if (!ioInstance || !message) {
+    return;
+  }
+
+  if (message.chatType === 'group') {
+    ioInstance.to('chat:group').emit('messages:created', message);
+    return;
+  }
+
+  const senderId = message.sender?._id?.toString?.() || message.sender?.toString?.();
+  const recipientId = message.recipient?._id?.toString?.() || message.recipient?.toString?.();
+
+  if (senderId) {
+    ioInstance.to(`user:${senderId}`).emit('messages:created', message);
+  }
+
+  if (recipientId) {
+    ioInstance.to(`user:${recipientId}`).emit('messages:created', message);
+  }
+};
+
 module.exports = {
+  emitMessageCreated,
   emitStoryCreated,
   getOnlineUsers,
   initSocket

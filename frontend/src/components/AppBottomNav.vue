@@ -1,7 +1,5 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-
-defineEmits(['logout'])
 </script>
 
 <template>
@@ -9,11 +7,11 @@ defineEmits(['logout'])
     <div class="app-bottom-nav-inner">
       <div class="nav-cluster nav-cluster-left">
         <RouterLink to="/feed" class="nav-link bottom-nav-link">
-          <span class="nav-icon">🏠</span>
+          <span class="nav-icon">Home</span>
           <span class="nav-text">Home</span>
         </RouterLink>
         <RouterLink to="/reels" class="nav-link bottom-nav-link">
-          <span class="nav-icon">🎥</span>
+          <span class="nav-icon">Reels</span>
           <span class="nav-text">Reels</span>
         </RouterLink>
       </div>
@@ -26,12 +24,12 @@ defineEmits(['logout'])
       </div>
 
       <div class="nav-cluster nav-cluster-right">
-        <button class="nav-link bottom-nav-link logout-btn" type="button" @click="$emit('logout')">
-          <span class="nav-icon">⇥</span>
-          <span class="nav-text">Logout</span>
-        </button>
+        <RouterLink to="/chat" class="nav-link bottom-nav-link">
+          <span class="nav-icon">Chat</span>
+          <span class="nav-text">Chat</span>
+        </RouterLink>
         <RouterLink to="/profile" class="nav-link bottom-nav-link">
-          <span class="nav-icon">👤</span>
+          <span class="nav-icon">Profile</span>
           <span class="nav-text">Profile</span>
         </RouterLink>
       </div>
@@ -117,8 +115,9 @@ defineEmits(['logout'])
 }
 
 .nav-icon {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   line-height: 1;
+  font-weight: 700;
 }
 
 .nav-text {
@@ -136,15 +135,6 @@ defineEmits(['logout'])
 .create-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 22px rgba(102, 126, 234, 0.34);
-}
-
-.logout-btn {
-  color: #c13f4d;
-}
-
-.logout-btn:hover {
-  background: rgba(220, 53, 69, 0.1) !important;
-  color: #c13f4d !important;
 }
 
 @media (max-width: 768px) {
@@ -175,7 +165,7 @@ defineEmits(['logout'])
   }
 
   .nav-icon {
-    font-size: 1.05rem;
+    font-size: 0.7rem;
   }
 
   .nav-text {

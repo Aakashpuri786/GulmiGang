@@ -107,6 +107,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       auth: '/api/auth',
+      messages: '/api/messages',
       posts: '/api/posts',
       reels: '/api/reels',
       stories: '/api/stories'
@@ -115,6 +116,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/messages', require('./routes/messages'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/reels', require('./routes/reels'));
 app.use('/api/stories', require('./routes/stories'));
