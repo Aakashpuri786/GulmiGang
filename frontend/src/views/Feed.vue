@@ -44,62 +44,19 @@
       </div>
     </section>
 
-    <div class="create-post">
-      <div class="card">
-        <div class="card-header">
-          <h4>Share something with the community</h4>
-        </div>
-        <Form :key="postFormKey" @submit="handleCreatePost" class="post-form">
-          <div class="form-group">
-            <Field name="content" rules="required|max:500" v-slot="{ field, errorMessage }">
-              <textarea
-                v-bind="field"
-                class="form-textarea"
-                placeholder="What's on your mind?"
-                rows="3"
-                :class="{ error: errorMessage }"
-              ></textarea>
-              <span v-if="errorMessage" class="error-message">{{ errorMessage }}</span>
-            </Field>
-          </div>
-
-          <div class="composer-upload">
-            <input
-              ref="feedImageInput"
-              type="file"
-              accept="image/*"
-              multiple
-              class="file-input"
-              @change="handlePostImages"
-            />
-
-            <button type="button" class="upload-trigger" @click="openImagePicker">
-              Add Images
-            </button>
-
-            <div v-if="selectedImages.length" class="selected-image-grid">
-              <div
-                v-for="(image, index) in selectedImages"
-                :key="`${image.file.name}-${index}`"
-                class="selected-image-card"
-              >
-                <img :src="image.preview" :alt="image.file.name" />
-                <button type="button" class="remove-image-btn" @click="removeSelectedImage(index)">
-                  Remove
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" :disabled="postLoading">
-              <span v-if="postLoading" class="loading-spinner"></span>
-              {{ postLoading ? 'Posting...' : 'Post' }}
-            </button>
-          </div>
-        </Form>
+    <section v-if="$route.query.created === 'post'" class="feed-banner success">
+      <div>
+        <strong>Your post was shared.</strong>
+        <span>It is now live in the community feed.</span>
       </div>
-    </div>
+    </section>
+
+    <section class="feed-banner">
+      <div>
+        <h4>Want to share something new?</h4>
+        <p>Posts and reels can now be shared only from the Create section.</p>
+      </div>
+    </section>
 
     <div class="posts-section">
       <h3 class="section-title">Recent Posts</h3>
@@ -282,10 +239,7 @@ export default {
   },
   data() {
     return {
-      postLoading: false,
       commentLoading: false,
-      postFormKey: 0,
-      selectedImages: [],
       storySubmitting: false,
       isStoryComposerOpen: false,
       isStoryViewerOpen: false,
@@ -323,28 +277,7 @@ export default {
       this.storyStore.fetchStories()
     ])
   },
-  beforeUnmount() {
-    this.resetSelectedImages()
-  },
   methods: {
-    async handleCreatePost(values) {
-      this.postLoading = true
-      try {
-        const formData = new FormData()
-        formData.append('content', values.content)
-        this.selectedImages.forEach((image) => {
-          formData.append('images', image.file)
-        })
-
-        await this.postStore.createPost(formData)
-        this.resetPostComposer()
-      } catch (err) {
-        alert('Failed to create post: ' + (err.response?.data?.msg || err.message))
-      } finally {
-        this.postLoading = false
-      }
-    },
-
     async toggleLike(post) {
       try {
         await this.postStore.likePost(post._id)
@@ -449,56 +382,6 @@ export default {
     storyFallback(userId) {
       const index = this.storyTiles.findIndex((tile) => tile._id === userId)
       return this.storyBackgrounds[index % this.storyBackgrounds.length]
-    },
-
-    openImagePicker() {
-      this.$refs.feedImageInput?.click()
-    },
-
-    handlePostImages(event) {
-      const files = Array.from(event.target.files || [])
-
-      files.forEach((file) => {
-        if (!file.type.startsWith('image/')) {
-          return
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-          alert(`${file.name} is larger than 5MB.`)
-          return
-        }
-
-        this.selectedImages.push({
-          file,
-          preview: URL.createObjectURL(file)
-        })
-      })
-
-      event.target.value = ''
-    },
-
-    removeSelectedImage(index) {
-      const [removedImage] = this.selectedImages.splice(index, 1)
-      if (removedImage?.preview) {
-        URL.revokeObjectURL(removedImage.preview)
-      }
-    },
-
-    resetSelectedImages() {
-      this.selectedImages.forEach((image) => {
-        if (image.preview) {
-          URL.revokeObjectURL(image.preview)
-        }
-      })
-      this.selectedImages = []
-      if (this.$refs.feedImageInput) {
-        this.$refs.feedImageInput.value = ''
-      }
-    },
-
-    resetPostComposer() {
-      this.postFormKey += 1
-      this.resetSelectedImages()
     },
 
     formatDate(dateString) {
@@ -677,36 +560,11 @@ export default {
   line-height: 1.3;
 }
 
-.create-post {
-  margin-bottom: 40px;
-}
-
-.post-form {
-  padding: 20px;
-}
-
-.file-input {
-  display: none;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 16px;
-  resize: vertical;
-  transition: border-color 0.3s ease;
-}
-
-.form-textarea:focus,
 .story-textarea:focus {
   outline: none;
   border-color: #667eea;
 }
 
-.form-textarea.error,
 .comment-input.error {
   border-color: #dc3545;
 }
@@ -718,47 +576,11 @@ export default {
   display: block;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 15px;
-}
-
-.composer-upload {
-  display: grid;
-  gap: 12px;
-}
-
-.upload-trigger {
-  width: fit-content;
-  border: 1px dashed #b7c4ef;
-  background: #f7f9ff;
-  color: #46557b;
-  border-radius: 999px;
-  padding: 10px 14px;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.selected-image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 12px;
-}
-
-.selected-image-card,
 .post-gallery img {
   border-radius: 16px;
   overflow: hidden;
 }
 
-.selected-image-card {
-  position: relative;
-  aspect-ratio: 1 / 1;
-}
-
-.selected-image-card img,
 .post-gallery img {
   width: 100%;
   height: 100%;
@@ -766,23 +588,39 @@ export default {
   display: block;
 }
 
-.remove-image-btn {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 8px;
-  border: none;
-  border-radius: 999px;
-  padding: 8px 10px;
-  background: rgba(15, 23, 40, 0.8);
-  color: white;
-  font: inherit;
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-
 .posts-section {
   margin-top: 40px;
+}
+
+.feed-banner {
+  margin-bottom: 28px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: white;
+  border: 1px solid #e6ecf5;
+  border-radius: 20px;
+  box-shadow: 0 14px 30px rgba(32, 48, 84, 0.08);
+}
+
+.feed-banner.success {
+  background: linear-gradient(135deg, #eefbf3, #f9fffb);
+  border-color: #caead5;
+}
+
+.feed-banner h4,
+.feed-banner strong {
+  margin: 0;
+  color: #22314d;
+}
+
+.feed-banner p,
+.feed-banner span {
+  display: block;
+  margin: 6px 0 0;
+  color: #67758f;
 }
 
 .empty-state {
@@ -1124,6 +962,11 @@ export default {
 @media (max-width: 768px) {
   .feed {
     padding: 10px;
+  }
+
+  .feed-banner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .stories-heading {

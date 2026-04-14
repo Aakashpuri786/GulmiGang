@@ -1,35 +1,53 @@
-<script setup>
-import { RouterLink } from 'vue-router'
-</script>
-
 <template>
   <nav class="app-bottom-nav" aria-label="Primary">
     <div class="app-bottom-nav-inner">
       <div class="nav-cluster nav-cluster-left">
         <RouterLink to="/feed" class="nav-link bottom-nav-link">
-          <span class="nav-icon">Home</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+            </svg>
+          </span>
           <span class="nav-text">Home</span>
         </RouterLink>
         <RouterLink to="/reels" class="nav-link bottom-nav-link">
-          <span class="nav-icon">Reels</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <path d="m10 9 5 3-5 3z" fill="currentColor"/>
+            </svg>
+          </span>
           <span class="nav-text">Reels</span>
         </RouterLink>
       </div>
 
       <div class="nav-cluster nav-cluster-center">
         <RouterLink to="/create" class="nav-link bottom-nav-link create-btn">
-          <span class="nav-icon">+</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+            </svg>
+          </span>
           <span class="nav-text">Create</span>
         </RouterLink>
       </div>
 
       <div class="nav-cluster nav-cluster-right">
         <RouterLink to="/chat" class="nav-link bottom-nav-link">
-          <span class="nav-icon">Chat</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 7.5h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-5 3v-11a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/>
+            </svg>
+          </span>
           <span class="nav-text">Chat</span>
         </RouterLink>
         <RouterLink to="/profile" class="nav-link bottom-nav-link">
-          <span class="nav-icon">Profile</span>
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M5.5 19a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>
+            </svg>
+          </span>
           <span class="nav-text">Profile</span>
         </RouterLink>
       </div>
@@ -85,7 +103,7 @@ import { RouterLink } from 'vue-router'
   text-decoration: none;
   padding: 10px 14px;
   border-radius: 18px;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -103,6 +121,7 @@ import { RouterLink } from 'vue-router'
 .nav-link.router-link-active {
   background: rgba(102, 126, 234, 0.12);
   color: #667eea;
+  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.08);
 }
 
 .bottom-nav-link {
@@ -115,9 +134,17 @@ import { RouterLink } from 'vue-router'
 }
 
 .nav-icon {
-  font-size: 0.9rem;
+  width: 22px;
+  height: 22px;
   line-height: 1;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .nav-text {
@@ -139,15 +166,19 @@ import { RouterLink } from 'vue-router'
 
 @media (max-width: 768px) {
   .app-bottom-nav {
-    padding: 0 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
   }
 
   .app-bottom-nav-inner {
     width: 100%;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-    padding: 10px;
-    border-radius: 22px 22px 0 0;
+    gap: 2px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: 0 -8px 30px rgba(31, 44, 72, 0.12);
   }
 
   .nav-cluster {
@@ -156,20 +187,27 @@ import { RouterLink } from 'vue-router'
 
   .bottom-nav-link {
     min-width: 0;
-    min-height: 62px;
-    padding: 10px 6px;
+    min-height: 58px;
+    padding: 8px 4px;
+    border-radius: 16px;
+    gap: 6px;
   }
 
   .create-btn {
     min-width: 0;
+    transform: translateY(-10px);
+    border-radius: 18px;
   }
 
   .nav-icon {
-    font-size: 0.7rem;
+    width: 20px;
+    height: 20px;
   }
 
   .nav-text {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 }
 </style>

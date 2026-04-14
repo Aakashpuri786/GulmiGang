@@ -19,11 +19,17 @@
           <h2>{{ user?.fullName || user?.username || 'User' }}</h2>
           <p class="hero-subtitle">@{{ user?.username || 'username' }}</p>
 
-          <div class="bio-row">
-            <p class="hero-bio">{{ user?.bio || 'No bio added yet.' }}</p>
-            <button type="button" class="btn btn-secondary" @click="openEditor">
-              {{ isEditing ? 'Editing' : 'Edit Profile' }}
-            </button>
+          <p class="hero-bio">{{ user?.bio || 'No bio added yet.' }}</p>
+
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <strong>{{ userPosts.length }}</strong>
+              <span>Posts</span>
+            </div>
+            <div class="hero-stat">
+              <strong>{{ userReels.length }}</strong>
+              <span>Reels</span>
+            </div>
           </div>
         </div>
       </div>
@@ -43,7 +49,7 @@
       <section v-if="isEditing" ref="editorCard" class="panel-card">
         <div class="panel-head split">
           <div>
-            <h3>Edit Details</h3>
+            <h3>Profile Settings</h3>
             <p class="panel-note">Update your profile photo, bio, and account details here.</p>
           </div>
           <div class="action-row">
@@ -125,18 +131,6 @@
               <span>Skills To Learn</span>
               <input v-model="form.skillsToLearn" type="text" class="input" placeholder="comma,separated,goals" />
             </label>
-          </div>
-        </div>
-      </section>
-
-      <section class="details-list-card">
-        <div class="panel-head">
-          <h3>Your Details List</h3>
-        </div>
-        <div class="details-list">
-          <div v-for="item in detailItems" :key="item.label" class="list-row">
-            <span class="list-label">{{ item.label }}</span>
-            <strong class="list-value">{{ item.value }}</strong>
           </div>
         </div>
       </section>
@@ -245,54 +239,38 @@ export default {
         .slice(0, 2)
         .map((part) => part[0]?.toUpperCase())
         .join('') || '?'
-    },
-    detailItems() {
-      return [
-        { label: 'Full Name', value: this.user?.fullName || 'Not provided' },
-        { label: 'Username', value: this.user?.username ? `@${this.user.username}` : 'Not provided' },
-        { label: 'User ID', value: this.user?.uniqueId || 'Not provided' },
-        { label: 'Email', value: this.user?.email || 'Not provided' },
-        { label: 'Phone', value: this.user?.phone || 'Not provided' },
-        { label: 'Location', value: this.user?.location || 'Not provided' },
-        { label: 'Gender', value: this.user?.gender || 'Not provided' },
-        { label: 'Date of Birth', value: this.formattedDateOfBirth },
-        { label: 'Joined', value: this.joinedDate },
-        { label: 'Verified', value: this.user?.isVerified ? 'Verified' : 'Not verified' },
-        { label: 'Bio', value: this.user?.bio || 'No bio added yet.' },
-        { label: 'Skills', value: this.user?.skills?.length ? this.user.skills.join(', ') : 'No skills added yet.' },
-        { label: 'Skills To Learn', value: this.user?.skillsToLearn?.length ? this.user.skillsToLearn.join(', ') : 'No learning goals added yet.' }
-      ]
-    },
-    formattedDateOfBirth() {
-      if (!this.user?.dateOfBirth) {
-        return 'Not provided'
+    }
+  },
+  watch: {
+    '$route.query.edit'(value) {
+      if (value === '1' && this.user) {
+        this.openEditor()
       }
-
-      return new Date(this.user.dateOfBirth).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    },
-    joinedDate() {
-      if (!this.user?.createdAt) {
-        return 'Not available'
-      }
-
-      return new Date(this.user.createdAt).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
     }
   },
   async mounted() {
     await this.loadProfile()
+    this.syncEditorStateFromRoute()
   },
   beforeUnmount() {
     this.revokePreviewIfNeeded()
   },
   methods: {
+    syncEditorStateFromRoute() {
+      if (this.$route.query.edit === '1' && this.user) {
+        this.openEditor()
+      }
+    },
+
+    clearEditQuery() {
+      if (!('edit' in this.$route.query)) {
+        return
+      }
+
+      const { edit, ...query } = this.$route.query
+      this.$router.replace({ query }).catch(() => {})
+    },
+
     hydrateForm() {
       if (!this.user) {
         return
@@ -365,6 +343,7 @@ export default {
     cancelEditing() {
       this.isEditing = false
       this.hydrateForm()
+      this.clearEditQuery()
     },
 
     triggerImageUpload() {
@@ -422,6 +401,7 @@ export default {
         await this.authStore.updateUser(formData)
         this.hydrateForm()
         this.isEditing = false
+        this.clearEditQuery()
       } catch (error) {
         const message = error.response?.data?.errors?.[0]?.msg || error.response?.data?.msg || error.message
         alert('Failed to save profile: ' + message)
@@ -449,8 +429,7 @@ export default {
 
 .profile-hero,
 .state-card,
-.panel-card,
-.details-list-card {
+.panel-card {
   background: white;
   border: 1px solid #e7ecf5;
   border-radius: 24px;
@@ -459,8 +438,7 @@ export default {
 
 .profile-hero,
 .state-card,
-.panel-card,
-.details-list-card {
+.panel-card {
   padding: 24px;
 }
 
@@ -516,14 +494,6 @@ export default {
   font-weight: 700;
 }
 
-.bio-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 8px;
-}
-
 .hero-bio,
 .panel-copy,
 .state-card p,
@@ -533,6 +503,44 @@ export default {
   margin: 0;
   color: #68758f;
   line-height: 1.6;
+}
+
+.hero-bio {
+  margin-top: 8px;
+}
+
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.hero-stat {
+  min-width: 110px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f6f8fd;
+  border: 1px solid #e4eaf5;
+}
+
+.hero-stat strong,
+.hero-stat span {
+  display: block;
+}
+
+.hero-stat strong {
+  color: #23314d;
+  font-size: 1.1rem;
+}
+
+.hero-stat span {
+  margin-top: 4px;
+  color: #6e7b96;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .panel-head {
@@ -614,8 +622,7 @@ export default {
   grid-column: 1 / -1;
 }
 
-.field span,
-.list-label {
+.field span {
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -665,28 +672,6 @@ export default {
   opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
-}
-
-.details-list {
-  display: grid;
-  gap: 12px;
-}
-
-.list-row {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 14px;
-  padding: 12px 0;
-  border-bottom: 1px solid #edf1f8;
-}
-
-.list-row:last-child {
-  border-bottom: none;
-}
-
-.list-value {
-  color: #23314d;
-  line-height: 1.5;
 }
 
 .profile-content-grid {
@@ -779,8 +764,7 @@ export default {
 
 @media (max-width: 768px) {
   .profile-top,
-  .panel-head.split,
-  .bio-row {
+  .panel-head.split {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -788,11 +772,6 @@ export default {
   .action-row,
   .btn {
     width: 100%;
-  }
-
-  .list-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
   }
 }
 </style>

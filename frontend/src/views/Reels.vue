@@ -1,120 +1,7 @@
 <template>
   <div class="reels-page">
-    <section class="reels-hero">
-      <div>
-        <p class="eyebrow">Reels</p>
-        <h2>Watch the latest community reels and post your own here.</h2>
-        <p class="hero-copy">
-          Reels shared from the create button also land here, so users can always find them in one place.
-        </p>
-      </div>
-
-      <button type="button" class="btn btn-primary hero-action" @click="focusComposer">
-        Post a Reel
-      </button>
-    </section>
-
-    <section ref="composerSection" class="composer-card">
-      <div class="composer-header">
-        <div>
-          <h3>Share a reel</h3>
-          <p>Upload a short video and caption for everyone in GulmiGang.</p>
-        </div>
-        <span class="composer-badge">Visible in Reels</span>
-      </div>
-
-      <div class="composer-body">
-        <label class="form-label" for="reel-caption">Caption</label>
-        <textarea
-          id="reel-caption"
-          ref="composerCaption"
-          v-model="composer.caption"
-          class="form-textarea"
-          maxlength="2200"
-          rows="3"
-          placeholder="Tell people what this reel is about..."
-        ></textarea>
-
-        <input
-          ref="composerVideoInput"
-          type="file"
-          accept="video/*"
-          class="file-input"
-          @change="handleVideoSelect"
-        />
-
-        <div class="upload-shell">
-          <div
-            class="upload-panel"
-            :class="{ ready: !!selectedVideo }"
-            role="button"
-            tabindex="0"
-            @click="triggerVideoPicker"
-            @keydown.enter.prevent="triggerVideoPicker"
-            @keydown.space.prevent="triggerVideoPicker"
-          >
-            <template v-if="selectedVideo">
-              <video :src="selectedVideo.preview" class="preview-video" controls></video>
-              <div class="upload-copy">
-                <strong>{{ selectedVideo.file.name }}</strong>
-                <span>{{ formatFileSize(selectedVideo.file.size) }}</span>
-              </div>
-            </template>
-
-            <template v-else>
-              <div class="upload-copy">
-                <strong>Select a video</strong>
-                <span>MP4, MOV and other video formats up to 50MB.</span>
-              </div>
-            </template>
-          </div>
-
-          <button
-            v-if="selectedVideo"
-            type="button"
-            class="btn btn-secondary"
-            @click="removeVideo"
-          >
-            Remove Video
-          </button>
-        </div>
-      </div>
-
-      <div class="composer-actions">
-        <button type="button" class="btn btn-secondary" @click="clearComposer">
-          Clear
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="submitting || !canSubmitReel"
-          @click="publishReel"
-        >
-          {{ submitting ? 'Posting Reel...' : 'Share Reel' }}
-        </button>
-      </div>
-    </section>
-
     <section class="reels-feed">
-      <div class="section-header">
-        <div>
-          <h3>Community reels</h3>
-          <p>Watch reels shared by members across Gulmi.</p>
-        </div>
-        <span class="section-stat">{{ reels.length }} total</span>
-      </div>
-
-      <div v-if="reelStore.loading" class="empty-state">
-        <h4>Loading reels...</h4>
-        <p>Your reel feed is being prepared.</p>
-      </div>
-
-      <div v-else-if="reels.length === 0" class="empty-state">
-        <h4>No reels yet</h4>
-        <p>Share the first reel from the composer above and it will appear here immediately.</p>
-      </div>
-
-      <div v-else class="reels-grid">
+      <div class="reels-grid">
         <article
           v-for="reel in reels"
           :key="reel._id"
@@ -249,11 +136,6 @@ export default {
   },
   data() {
     return {
-      composer: {
-        caption: ''
-      },
-      selectedVideo: null,
-      submitting: false,
       selectedReelId: null,
       showComments: false,
       newComment: ''
@@ -268,9 +150,6 @@ export default {
     },
     selectedReel() {
       return this.reels.find((reel) => reel._id === this.selectedReelId) || null
-    },
-    canSubmitReel() {
-      return Boolean(this.composer.caption.trim() && this.selectedVideo)
     }
   },
   async mounted() {
@@ -280,78 +159,7 @@ export default {
       alert('Failed to load reels: ' + (error.response?.data?.msg || error.message))
     }
   },
-  beforeUnmount() {
-    this.revokeVideoPreview()
-  },
   methods: {
-    focusComposer() {
-      this.$refs.composerSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      this.$refs.composerCaption?.focus()
-    },
-
-    triggerVideoPicker() {
-      this.$refs.composerVideoInput?.click()
-    },
-
-    handleVideoSelect(event) {
-      const file = event.target.files?.[0]
-      if (!file) return
-
-      if (file.size > 50 * 1024 * 1024) {
-        alert('Please choose a video smaller than 50MB.')
-        event.target.value = ''
-        return
-      }
-
-      this.revokeVideoPreview()
-      this.selectedVideo = {
-        file,
-        preview: URL.createObjectURL(file)
-      }
-    },
-
-    revokeVideoPreview() {
-      if (this.selectedVideo?.preview) {
-        URL.revokeObjectURL(this.selectedVideo.preview)
-      }
-    },
-
-    removeVideo() {
-      this.revokeVideoPreview()
-      this.selectedVideo = null
-      if (this.$refs.composerVideoInput) {
-        this.$refs.composerVideoInput.value = ''
-      }
-    },
-
-    clearComposer() {
-      this.composer.caption = ''
-      this.removeVideo()
-    },
-
-    async publishReel() {
-      if (!this.canSubmitReel) {
-        alert('Please add a caption and choose a video before posting.')
-        return
-      }
-
-      this.submitting = true
-      try {
-        const formData = new FormData()
-        formData.append('caption', this.composer.caption.trim())
-        formData.append('video', this.selectedVideo.file)
-
-        const createdReel = await this.reelStore.createReel(formData)
-        this.clearComposer()
-        this.openReel(createdReel._id)
-      } catch (error) {
-        const message = error.response?.data?.errors?.[0]?.msg || error.response?.data?.msg || error.message
-        alert('Failed to post reel: ' + message)
-      } finally {
-        this.submitting = false
-      }
-    },
-
     openReel(reelId) {
       this.selectedReelId = reelId
       this.showComments = false
@@ -419,14 +227,6 @@ export default {
       return String(username || '?').charAt(0).toUpperCase()
     },
 
-    formatFileSize(size) {
-      if (size < 1024 * 1024) {
-        return `${Math.round(size / 1024)} KB`
-      }
-
-      return `${(size / (1024 * 1024)).toFixed(1)} MB`
-    },
-
     formatDate(dateString) {
       const date = new Date(dateString)
       const now = new Date()
@@ -447,99 +247,17 @@ export default {
 
 <style scoped>
 .reels-page {
-  display: grid;
-  gap: 28px;
+  padding: 0;
 }
 
-.reels-hero,
-.composer-card,
 .reels-feed {
   background: white;
   border: 1px solid #e7ecf5;
   border-radius: 24px;
   box-shadow: 0 18px 40px rgba(38, 56, 96, 0.08);
-}
-
-.reels-hero {
-  padding: 28px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  background:
-    radial-gradient(circle at top right, rgba(102, 126, 234, 0.12), transparent 35%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-}
-
-.eyebrow {
-  margin: 0 0 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #6d7bd9;
-}
-
-.reels-hero h2,
-.composer-header h3,
-.section-header h3 {
-  margin: 0;
-  color: #1f2c48;
-}
-
-.hero-copy,
-.composer-header p,
-.section-header p {
-  margin: 10px 0 0;
-  color: #68758f;
-  line-height: 1.6;
-}
-
-.hero-action {
-  flex-shrink: 0;
-}
-
-.composer-card,
-.reels-feed {
   padding: 24px;
 }
 
-.composer-header,
-.section-header,
-.composer-actions,
-.modal-header,
-.modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.composer-header {
-  margin-bottom: 18px;
-}
-
-.composer-badge,
-.section-stat {
-  padding: 9px 14px;
-  border-radius: 999px;
-  background: #eef3ff;
-  color: #5b69c5;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.composer-body {
-  display: grid;
-  gap: 14px;
-}
-
-.form-label {
-  font-weight: 700;
-  color: #24314f;
-}
-
-.form-textarea,
 .comment-input {
   width: 100%;
   border: 1px solid #d7deeb;
@@ -550,68 +268,10 @@ export default {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-textarea:focus,
 .comment-input:focus {
   outline: none;
   border-color: #7280da;
   box-shadow: 0 0 0 4px rgba(114, 128, 218, 0.12);
-}
-
-.file-input {
-  display: none;
-}
-
-.upload-shell {
-  display: grid;
-  gap: 12px;
-}
-
-.upload-panel {
-  width: 100%;
-  border: 1px dashed #b9c5e3;
-  border-radius: 20px;
-  background: #f8fbff;
-  padding: 18px;
-  display: grid;
-  gap: 16px;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
-}
-
-.upload-panel:hover {
-  border-color: #7280da;
-  background: #f1f5ff;
-}
-
-.upload-panel.ready {
-  border-style: solid;
-  background: #fbfcff;
-}
-
-.upload-copy {
-  display: grid;
-  gap: 4px;
-}
-
-.upload-copy strong {
-  color: #23314d;
-}
-
-.upload-copy span {
-  color: #6f7d99;
-}
-
-.preview-video {
-  width: 100%;
-  max-height: 340px;
-  border-radius: 16px;
-  object-fit: contain;
-  background: #0f1728;
-}
-
-.composer-actions {
-  margin-top: 18px;
 }
 
 .reels-grid {
@@ -714,25 +374,6 @@ export default {
   width: 30px;
   height: 30px;
   font-size: 0.78rem;
-}
-
-.empty-state {
-  margin-top: 22px;
-  padding: 34px 18px;
-  border: 1px dashed #d4ddec;
-  border-radius: 20px;
-  text-align: center;
-  color: #66758f;
-  background: #fbfcff;
-}
-
-.empty-state h4 {
-  margin: 0 0 8px;
-  color: #23314d;
-}
-
-.empty-state p {
-  margin: 0;
 }
 
 .reel-modal {
@@ -854,6 +495,14 @@ export default {
   gap: 10px;
 }
 
+.modal-header,
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
 @media (max-width: 900px) {
   .reel-modal-card {
     grid-template-columns: 1fr;
@@ -865,22 +514,16 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .reels-hero,
-  .composer-header,
-  .section-header,
-  .composer-actions {
+  .modal-header,
+  .modal-actions {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .hero-action,
-  .composer-actions .btn,
   .comment-form .btn {
     width: 100%;
   }
 
-  .reels-hero,
-  .composer-card,
   .reels-feed {
     padding: 18px;
   }

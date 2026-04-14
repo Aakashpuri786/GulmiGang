@@ -1,5 +1,45 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+const authStore = useAuthStore()
+const router = useRouter()
+const menuOpen = ref(false)
+const menuRef = ref(null)
+
+const closeMenu = () => {
+  menuOpen.value = false
+}
+
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value
+}
+
+const handleDocumentClick = (event) => {
+  if (!menuRef.value?.contains(event.target)) {
+    closeMenu()
+  }
+}
+
+const goToSettings = async () => {
+  closeMenu()
+  await router.push({ path: '/profile', query: { edit: '1' } }).catch(() => {})
+}
+
+const logout = async () => {
+  closeMenu()
+  authStore.logout()
+  await router.push('/login').catch(() => {})
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
@@ -21,6 +61,29 @@ import { RouterLink } from 'vue-router'
         </svg>
         <span>Search</span>
       </RouterLink>
+
+      <div ref="menuRef" class="menu-shell">
+        <button
+          type="button"
+          class="menu-toggle"
+          aria-label="Open account menu"
+          :aria-expanded="menuOpen"
+          @click.stop="toggleMenu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div v-if="menuOpen" class="menu-dropdown">
+          <button type="button" class="menu-item" @click="goToSettings">
+            Settings
+          </button>
+          <button type="button" class="menu-item danger" @click="logout">
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 </template>
@@ -78,6 +141,10 @@ import { RouterLink } from 'vue-router'
   gap: 12px;
 }
 
+.menu-shell {
+  position: relative;
+}
+
 .search-link {
   display: inline-flex;
   align-items: center;
@@ -107,6 +174,69 @@ import { RouterLink } from 'vue-router'
   height: 18px;
 }
 
+.menu-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid #e0e8f5;
+  border-radius: 18px;
+  background: #f4f7fd;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.menu-toggle:hover {
+  background: #eaf0ff;
+  border-color: #cad7f3;
+  transform: translateY(-1px);
+}
+
+.menu-toggle span {
+  width: 18px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: #33415d;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 168px;
+  padding: 8px;
+  border: 1px solid #e3eaf6;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 18px 38px rgba(26, 41, 74, 0.14);
+}
+
+.menu-item {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #24324e;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  padding: 12px 14px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-item:hover {
+  background: #f4f7fd;
+  color: #667eea;
+}
+
+.menu-item.danger:hover {
+  background: #fff1f1;
+  color: #d04b4b;
+}
+
 @media (max-width: 768px) {
   .site-header {
     padding: 20px;
@@ -118,6 +248,10 @@ import { RouterLink } from 'vue-router'
 
   .search-link {
     padding: 12px;
+  }
+
+  .menu-dropdown {
+    right: -4px;
   }
 }
 </style>

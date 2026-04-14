@@ -1,6 +1,6 @@
 <template>
-  <div class="chat-page">
-    <aside class="chat-sidebar">
+  <div class="chat-page" :class="{ 'mobile-chat-active': isMobileLayout && mobilePanelVisible }">
+    <aside v-show="!isMobileLayout || !mobilePanelVisible" class="chat-sidebar">
       <div class="sidebar-header">
         <div>
           <p class="eyebrow">Chat</p>
@@ -9,6 +9,33 @@
         <span class="live-pill" :class="{ connected: chatStore.connected }">
           {{ chatStore.connected ? 'Realtime' : 'Offline' }}
         </span>
+      </div>
+
+      <div class="mobile-conversation-strip">
+        <button type="button" class="mobile-avatar-btn group" @click="openGroup">
+          <span class="avatar group-avatar">GG</span>
+          <span>Group</span>
+        </button>
+
+        <button
+          v-for="conversation in directConversations"
+          :key="`mobile-${conversation._id}`"
+          type="button"
+          class="mobile-avatar-btn"
+          @click="openDirect(conversation._id)"
+        >
+          <span class="avatar">
+            <img
+              v-if="conversation.profilePicture"
+              :src="conversation.profilePicture"
+              :alt="conversation.username"
+              class="avatar-image"
+            />
+            <span v-else>{{ getInitial(conversation.username) }}</span>
+            <i class="status-dot" :class="{ online: isOnline(conversation._id) }"></i>
+          </span>
+          <span>{{ conversation.username }}</span>
+        </button>
       </div>
 
       <button
@@ -44,7 +71,13 @@
         >
           <div class="conversation-user">
             <div class="avatar">
-              <span>{{ getInitial(conversation.username) }}</span>
+              <img
+                v-if="conversation.profilePicture"
+                :src="conversation.profilePicture"
+                :alt="conversation.username"
+                class="avatar-image"
+              />
+              <span v-else>{{ getInitial(conversation.username) }}</span>
               <i class="status-dot" :class="{ online: isOnline(conversation._id) }"></i>
             </div>
             <div class="conversation-copy">
@@ -57,11 +90,38 @@
       </div>
     </aside>
 
-    <section class="chat-panel">
+    <section v-show="!isMobileLayout || mobilePanelVisible" class="chat-panel">
       <div class="panel-header">
-        <div>
+        <div class="panel-header-main">
+          <button
+            v-if="isMobileLayout"
+            type="button"
+            class="mobile-back-btn"
+            @click="closeMobileChat"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 6 9 12l6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+            </svg>
+            <span>Back</span>
+          </button>
+
+          <div class="panel-avatar">
+            <span v-if="activeConversation.type === 'group'" class="avatar group-avatar">GG</span>
+            <span v-else class="avatar">
+              <img
+                v-if="activeMeta?.profilePicture"
+                :src="activeMeta.profilePicture"
+                :alt="activeTitle"
+                class="avatar-image"
+              />
+              <span v-else>{{ getInitial(activeMeta?.username || activeTitle) }}</span>
+            </span>
+          </div>
+
+          <div>
           <p class="panel-title">{{ activeTitle }}</p>
           <p class="panel-subtitle">{{ activeSubtitle }}</p>
+          </div>
         </div>
       </div>
 
@@ -120,7 +180,9 @@ export default {
   data() {
     return {
       draft: '',
-      sending: false
+      sending: false,
+      isMobileLayout: false,
+      mobilePanelVisible: false
     }
   },
   computed: {
@@ -165,13 +227,24 @@ export default {
     }
   },
   async mounted() {
+    this.handleResize()
+    window.addEventListener('resize', this.handleResize)
+
     try {
       await this.chatStore.fetchConversations()
-      await this.chatStore.setActiveConversation('group', 'group:all')
-      this.scrollToBottom()
+      if (this.isMobileLayout) {
+        this.mobilePanelVisible = false
+      } else {
+        await this.chatStore.setActiveConversation('group', 'group:all')
+        this.mobilePanelVisible = true
+        this.scrollToBottom()
+      }
     } catch (error) {
       alert('Failed to load chat: ' + (error.response?.data?.msg || error.message))
     }
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.handleResize)
   },
   watch: {
     messages() {
@@ -179,12 +252,49 @@ export default {
     }
   },
   methods: {
+    async ensureActiveConversationLoaded() {
+      const type = this.activeConversation.type
+      const id = this.activeConversation.id
+      const key = type === 'group' ? 'group' : id
+
+      if (!this.chatStore.messagesByKey[key]) {
+        await this.chatStore.setActiveConversation(type, id)
+      }
+    },
+
+    handleResize() {
+      const wasMobile = this.isMobileLayout
+      this.isMobileLayout = window.innerWidth <= 768
+
+      if (this.isMobileLayout) {
+        if (!wasMobile) {
+          this.mobilePanelVisible = false
+        }
+        return
+      }
+
+      this.mobilePanelVisible = true
+      if (wasMobile) {
+        this.ensureActiveConversationLoaded().catch(() => {})
+      }
+    },
+
+    closeMobileChat() {
+      this.mobilePanelVisible = false
+    },
+
     async openGroup() {
       await this.chatStore.setActiveConversation('group', 'group:all')
+      if (this.isMobileLayout) {
+        this.mobilePanelVisible = true
+      }
     },
 
     async openDirect(userId) {
       await this.chatStore.setActiveConversation('direct', userId)
+      if (this.isMobileLayout) {
+        this.mobilePanelVisible = true
+      }
     },
 
     async sendMessage() {
@@ -319,6 +429,10 @@ export default {
   gap: 12px;
 }
 
+.mobile-conversation-strip {
+  display: none;
+}
+
 .section-head span,
 .panel-subtitle,
 .conversation-copy span,
@@ -378,6 +492,18 @@ export default {
   place-items: center;
   font-weight: 800;
   position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.group-avatar {
+  background: linear-gradient(135deg, #6fc3ff, #667eea);
 }
 
 .status-dot {
@@ -404,6 +530,22 @@ export default {
 .panel-header {
   padding: 22px 24px;
   border-bottom: 1px solid #edf1f8;
+}
+
+.panel-header-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.panel-avatar .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+}
+
+.mobile-back-btn {
+  display: none;
 }
 
 .messages-shell {
@@ -518,18 +660,112 @@ export default {
 
 @media (max-width: 768px) {
   .chat-page {
-    gap: 16px;
+    gap: 0;
+    min-height: calc(100vh - 190px);
   }
 
   .sidebar-header,
-  .panel-header,
   .section-head {
     flex-direction: column;
     align-items: flex-start;
   }
 
+  .chat-sidebar,
+  .chat-panel {
+    border-radius: 24px;
+  }
+
+  .chat-sidebar {
+    gap: 20px;
+    padding: 18px 16px 24px;
+  }
+
+  .mobile-conversation-strip {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .mobile-conversation-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-avatar-btn {
+    border: none;
+    background: transparent;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    min-width: 68px;
+    padding: 0;
+    color: #2d3956;
+    font: inherit;
+  }
+
+  .mobile-avatar-btn .avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 22px;
+    box-shadow: 0 10px 20px rgba(31, 44, 72, 0.12);
+  }
+
+  .mobile-avatar-btn span:last-child {
+    max-width: 68px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    color: #5f6d89;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .conversation-card {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .panel-header {
+    padding: 16px;
+  }
+
+  .panel-header-main {
+    align-items: center;
+  }
+
+  .mobile-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    background: transparent;
+    color: #24324e;
+    padding: 6px 0;
+    font: inherit;
+    font-weight: 800;
+  }
+
+  .mobile-back-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .panel-avatar .avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
+  }
+
+  .messages-shell {
+    padding: 18px 16px 12px;
+  }
+
   .composer {
     grid-template-columns: 1fr;
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px));
   }
 
   .btn {
@@ -538,6 +774,11 @@ export default {
 
   .message-bubble {
     max-width: 92%;
+  }
+
+  .mobile-chat-active .chat-page,
+  .mobile-chat-active.chat-page {
+    min-height: calc(100vh - 190px);
   }
 }
 </style>
