@@ -1,5 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5007/api';
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5007';
+const API_URL = import.meta.env.VITE_API_URL || 'https://gulmigang.onrender.com/';
+const WS_URL = import.meta.env.VITE_WS_URL || 'https://gulmigang.onrender.com/';
 
 export default {
   API_URL,
