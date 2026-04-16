@@ -36,11 +36,11 @@ services:
     environment:
       NODE_ENV: development
       PORT: 5007
-      MONGODB_URI: mongodb://admin:gulmigang2024@mongodb:27017/gulmigang?authSource=admin
-      MONGO_URI: mongodb://admin:gulmigang2024@mongodb:27017/gulmigang?authSource=admin
+      MONGODB_URI: mongodb+srv://aakashpurionline:AaKashpuri66@gulmigang.2cobfbi.mongodb.net/?appName=GulmiGang
+      MONGO_URI: 
       JWT_SECRET: gulmigang-super-secret-key-change-in-production
       JWT_REFRESH_SECRET: gulmigang-refresh-secret-key-2024
-      FRONTEND_URL: http://localhost:5178
+      FRONTEND_URL: https://gulmigang-1.onrender.com
       UPLOAD_MAX_SIZE: 10485760
       SESSION_TIMEOUT: 86400000
     volumes:
