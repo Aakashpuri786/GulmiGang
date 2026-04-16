@@ -20,6 +20,7 @@ const allowedOrigins = new Set([
   'http://127.0.0.1:5175',
   'http://localhost:5178',
   'http://127.0.0.1:5178',
+  'https://gulmigang-1.onrender.com',
   ...configuredOrigins
 ]);
 initSocket(httpServer, allowedOrigins);
